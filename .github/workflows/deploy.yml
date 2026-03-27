@@ -1,0 +1,70 @@
+name: Build and Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main   # เปลี่ยน branch ได้ตามต้องการ
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout source code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup JDK (ต้องตรงกับ version บน EC2)
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+
+      # 3. Build WAR ด้วย Ant
+      - name: Install Ant
+        run: sudo apt-get install -y ant
+
+      - name: Build WAR
+        run: ant -f deploy/build.xml war
+
+      # 4. Copy WAR ไปยัง EC2 ผ่าน SCP
+      - name: Deploy WAR to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          source: "dist/HelloJSS.war"
+          target: "/tmp/"
+
+      # 5. SSH เข้า EC2 เพื่อ deploy WAR ลง Tomcat
+      - name: Deploy to Tomcat on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+
+            TOMCAT_HOME=${{ secrets.TOMCAT_HOME }}
+            WAR_SOURCE="/tmp/dist/HelloJSS.war"
+            WEBAPPS="$TOMCAT_HOME/webapps"
+
+            echo ">>> Stopping Tomcat..."
+            sudo "$TOMCAT_HOME/bin/shutdown.sh" || true
+            sleep 5
+
+            echo ">>> Removing old deployment..."
+            sudo rm -rf "$WEBAPPS/HelloJSS" "$WEBAPPS/HelloJSS.war"
+
+            echo ">>> Copying new WAR..."
+            sudo cp "$WAR_SOURCE" "$WEBAPPS/HelloJSS.war"
+
+            echo ">>> Starting Tomcat..."
+            sudo "$TOMCAT_HOME/bin/startup.sh"
+
+            echo ">>> Deploy complete!"

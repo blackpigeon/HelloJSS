@@ -25,3 +25,6 @@ replay_pid*
 
 # Tomcat runtime (binaries, not source)
 runtime/
+
+# Ant build output
+dist/
