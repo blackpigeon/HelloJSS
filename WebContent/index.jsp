@@ -37,7 +37,7 @@
 </head>
 <body>
 <div class="panel">
-    <p class="hello">Hello <span class="jss-green">JSS</span></p>
+    <p class="hello"><span class="jss-green"></span>Hello JSS</span></p>
     <p class="time">Server time: <%= new java.util.Date() %></p>
 </div>
 </body>
