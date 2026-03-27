@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="HelloJSS" default="war" basedir="..">
+    <property name="web.dir" location="${basedir}/WebContent"/>
+    <property name="dist.dir" location="${basedir}/dist"/>
+    <property name="war.file" location="${dist.dir}/HelloJSS.war"/>
+
+    <target name="clean">
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <target name="war" depends="clean">
+        <mkdir dir="${dist.dir}"/>
+        <war destfile="${war.file}" webxml="${web.dir}/WEB-INF/web.xml">
+            <fileset dir="${web.dir}"/>
+        </war>
+    </target>
+</project>
