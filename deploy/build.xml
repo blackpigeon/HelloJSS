@@ -1,17 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="HelloJSS" default="war" basedir="..">
+    <property name="src.dir" location="${basedir}/src"/>
     <property name="web.dir" location="${basedir}/WebContent"/>
+    <property name="lib.dir" location="${basedir}/lib"/>
+    <property name="build.dir" location="${basedir}/build"/>
+    <property name="classes.dir" location="${build.dir}/classes"/>
     <property name="dist.dir" location="${basedir}/dist"/>
     <property name="war.file" location="${dist.dir}/HelloJSS.war"/>
+    <property name="postgresql.jdbc.version" value="42.7.5"/>
+    <property name="postgresql.jdbc.jar" location="${lib.dir}/postgresql-${postgresql.jdbc.version}.jar"/>
+    <property name="servlet.api.jar" location="${basedir}/runtime/apache-tomcat-8.5.100/lib/servlet-api.jar"/>
 
     <target name="clean">
+        <delete dir="${build.dir}"/>
         <delete dir="${dist.dir}"/>
     </target>
 
-    <target name="war" depends="clean">
+    <target name="init">
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${lib.dir}"/>
+    </target>
+
+    <target name="resolve-libs" depends="init">
+        <get src="https://repo1.maven.org/maven2/org/postgresql/postgresql/${postgresql.jdbc.version}/postgresql-${postgresql.jdbc.version}.jar"
+             dest="${postgresql.jdbc.jar}"
+             usetimestamp="true"
+             skipexisting="true"/>
+    </target>
+
+    <target name="compile" depends="clean,resolve-libs">
+        <javac srcdir="${src.dir}"
+               destdir="${classes.dir}"
+               includeantruntime="false"
+               source="1.8"
+               target="1.8"
+               encoding="UTF-8">
+            <classpath>
+                <pathelement location="${servlet.api.jar}"/>
+                <fileset dir="${lib.dir}">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="war" depends="compile">
         <mkdir dir="${dist.dir}"/>
         <war destfile="${war.file}" webxml="${web.dir}/WEB-INF/web.xml">
             <fileset dir="${web.dir}"/>
+            <classes dir="${classes.dir}"/>
+            <lib dir="${lib.dir}">
+                <include name="*.jar"/>
+            </lib>
         </war>
     </target>
 </project>

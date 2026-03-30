@@ -1,0 +1,15 @@
+<Context>
+    <Resource
+        name="jdbc/HelloJSS"
+        auth="Container"
+        type="javax.sql.DataSource"
+        driverClassName="org.postgresql.Driver"
+        url="jdbc:postgresql://your-rds-proxy-or-aurora-endpoint:5432/hellojss"
+        username="${db.username}"
+        password="${db.password}"
+        maxTotal="20"
+        maxIdle="5"
+        maxWaitMillis="10000"
+        testOnBorrow="true"
+        validationQuery="SELECT 1" />
+</Context>
