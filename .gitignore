@@ -28,3 +28,10 @@ runtime/
 
 # Ant build output
 dist/
+build/
+lib/
+
+# EC2 / SSH keys (NEVER commit private keys)
+*.pem
+*.key
+deploy/hellojss-key.pem

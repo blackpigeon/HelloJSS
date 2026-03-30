@@ -3,32 +3,29 @@ name: Build and Deploy to AWS EC2
 on:
   push:
     branches:
-      - main   # เปลี่ยน branch ได้ตามต้องการ
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: UAT
 
     steps:
-      # 1. Checkout source code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Setup JDK (ต้องตรงกับ version บน EC2)
       - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
           java-version: '8'
           distribution: 'temurin'
 
-      # 3. Build WAR ด้วย Ant
       - name: Install Ant
         run: sudo apt-get install -y ant
 
       - name: Build WAR
         run: ant -f deploy/build.xml war
 
-      # 4. Copy WAR ไปยัง EC2 ผ่าน SCP
       - name: Deploy WAR to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -39,8 +36,7 @@ jobs:
           source: "dist/HelloJSS.war"
           target: "/tmp/"
 
-      # 5. SSH เข้า EC2 เพื่อ deploy WAR ลง Tomcat
-      - name: Deploy to Tomcat on EC2
+      - name: Configure DB and deploy to Tomcat
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -54,6 +50,19 @@ jobs:
             WAR_SOURCE="/tmp/dist/HelloJSS.war"
             WEBAPPS="$TOMCAT_HOME/webapps"
 
+            # --- Write setenv.sh: Tomcat sources this on startup, no password stored ---
+            echo ">>> Writing $TOMCAT_HOME/bin/setenv.sh ..."
+            sudo tee "$TOMCAT_HOME/bin/setenv.sh" > /dev/null << 'SETENV'
+            export HELLOJSS_DB_AUTH_MODE=iam
+            export HELLOJSS_DB_HOST=database-1.cluster-chu0uc6ca4ie.ap-southeast-1.rds.amazonaws.com
+            export HELLOJSS_DB_PORT=5432
+            export HELLOJSS_DB_NAME=postgres
+            export HELLOJSS_DB_USER=jsshello_user
+            export HELLOJSS_AWS_REGION=ap-southeast-1
+            SETENV
+            sudo chmod 755 "$TOMCAT_HOME/bin/setenv.sh"
+
+            # --- Deploy WAR ---
             echo ">>> Stopping Tomcat..."
             sudo "$TOMCAT_HOME/bin/shutdown.sh" || true
             sleep 5
